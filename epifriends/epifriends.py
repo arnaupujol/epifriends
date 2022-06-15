@@ -57,8 +57,8 @@ def dbscan(positions, link_d, min_neighbours = 2):
     link_d: float
         The linking distance of the DBSCAN algorithm
     min_neighbours: int
-        Minium number of neighbours in the radius < link_d needed to consider
-        the cluster
+        Minium number of neighbours in the radius < link_d needed to link cases
+        as friends
 
     Returns:
     --------
@@ -107,3 +107,120 @@ def dbscan(positions, link_d, min_neighbours = 2):
     for i, f in enumerate(np.unique(cluster_id[cluster_id>0])):
         cluster_id[cluster_id == f] = i+1
     return cluster_id
+
+def catalogue(positions, test_result, link_d, cluster_id = None, min_neighbours = 2):
+    """
+    This method runs the DBSCAN algorithm (if cluster_id is None) and obtains the mean
+    positivity rate (PR) of each cluster extended with the non-infected cases
+    closer than the link_d.
+
+    Parameters:
+    -----------
+    positions: np.ndarray
+        An array with the position parameters with shape (n,2),
+        where n is the number of positions
+    test_result: np.array
+        An array with the test results (0 or 1)
+    link_d: float
+        The linking distance to connect cases
+    cluster_id: np.array
+        An array with the cluster ids of the positive cases
+    min_neighbours: int
+        Minium number of neighbours in the radius < link_d needed to link cases
+        as friends
+
+    Returns:
+    --------
+    cluster_id: np.array
+        List of the cluster IDs of each position, with 0 for those
+        without a cluster.
+    mean_pr_fof: np.array
+        Mean PR corresponding to cluster_id
+    pval_fof: np.array
+        P-value corresponding to cluster_id
+    epifriends_catalogue: geopandas.DataFrame
+        Catalogue of the epifriends clusters and their main characteristics
+    """
+    #Define positions of positive cases
+    positive_positions = positions[test_result == 1]
+    #Computing cluster_id if needed
+    if cluster_id is None:
+        cluster_id = dbscan(positive_positions, link_d, \
+                            min_neighbours = min_neighbours)
+    #Create KDTree for all populations
+    tree =spatial.KDTree(positions)
+    #Define total number of positive cases
+    total_positives = np.sum(test_result)
+    #Define total number of cases
+    total_n = len(test_result)
+
+    #Initialising mean PR and p-value for the positive cases in clusters
+    mean_pr_cluster = np.zeros_like(cluster_id)
+    pval_cluster = np.ones_like(cluster_id)
+    #EpiFRIenDs cluster catalogue
+    epifriends_catalogue = {'id' : [], #EpiFRIenDs id
+                     'mean_position_pos' : [], #Mean position of positive cases
+                     'mean_position_all' : [], #Mean position of all cases
+                     'mean_pr' : [], #Positivity rate
+                     'positives' : [], #Number of positive cases
+                     'negatives' : [], #Number of negative cases
+                     'total' : [], #Total number of positions
+                     'indeces' : [], #Indeces of all positions
+                     'p' : [], #p-value of detection
+                    }
+    for i,f in enumerate(np.unique(cluster_id[cluster_id>0])):
+        #get all indeces with this cluster id
+        has_this_cluster_id = cluster_id == f
+        cluster_id_indeces = np.arange(len(positive_positions))[has_this_cluster_id]
+        #for all these indeces, get list of friends from all positions
+        all_friends_indeces = find_indeces(positive_positions[cluster_id_indeces], link_d, tree)
+        #get unique values of such indeces
+        total_friends_indeces = np.unique(np.concatenate(all_friends_indeces))
+        #get mean infection from all the unique indeces
+        mean_pr = np.mean(test_result[total_friends_indeces])
+        #assign mean PR and p-value to each cluster_id for the positive cases
+        mean_pr_cluster[cluster_id_indeces] = mean_pr
+        npos = np.sum(test_result[total_friends_indeces])
+        pval = 1 - stats.binom.cdf(npos - 1, len(total_friends_indeces), \
+                                    total_positives/total_n)
+        pval_cluster[cluster_id_indeces] = pval
+        #setting EpiFRIenDs catalogue
+        epifriends_catalogue['id'].append(f)
+        mean_pos = np.mean(positive_positions[cluster_id_indeces], axis = 0)
+        epifriends_catalogue['mean_position_pos'].append(mean_pos)
+        mean_pos_ext = np.mean(positions[total_friends_indeces], axis = 0)
+        epifriends_catalogue['mean_position_all'].append(mean_pos_ext)
+        epifriends_catalogue['mean_pr'].append(mean_pr)
+        epifriends_catalogue['positives'].append(len(cluster_id_indeces))
+        epifriends_catalogue['negatives'].append(len(total_friends_indeces) - len(cluster_id_indeces))
+        epifriends_catalogue['total'].append(len(total_friends_indeces))
+        epifriends_catalogue['indeces'].append(total_friends_indeces)
+        epifriends_catalogue['p'].append(pval)
+    #Make the epifriends_catalogue a geopandas dataframe
+    epifriends_catalogue = dict2geodf(epifriends_catalogue)
+    return cluster_id, mean_pr_cluster, pval_cluster, epifriends_catalogue
+
+def dict2geodf(dict_catalogue, epsg = 3857):
+    """
+    This method transforms the EpiFRIenDs catalogue dictionary
+    into a geopandas dataframe.
+
+    Parameters:
+    -----------
+    dict_catalogue: dict
+        Dictionary with the EpiFRIenDs catalogue
+    epsg: int
+        GIS spatial projection of coordinates
+
+    Returns:
+    --------
+    geo_catalogue: geopandas.GeoDataFrame
+        Data frame of catalogue with GIS coordinates
+    """
+    geo_catalogue = pd.DataFrame(dict_catalogue)
+    x_points = np.array([i[0] for i in geo_catalogue['mean_position_pos']])
+    y_points = np.array([i[1] for i in geo_catalogue['mean_position_pos']])
+    geo_catalogue = geopandas.GeoDataFrame(geo_catalogue, \
+                        geometry = geopandas.points_from_xy(x_points, y_points))
+    geo_catalogue = geo_catalogue.set_crs(epsg=epsg)
+    return geo_catalogue
