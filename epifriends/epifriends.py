@@ -224,3 +224,149 @@ def dict2geodf(dict_catalogue, epsg = 3857):
                         geometry = geopandas.points_from_xy(x_points, y_points))
     geo_catalogue = geo_catalogue.set_crs(epsg=epsg)
     return geo_catalogue
+
+def distance(pos_a, pos_b):
+    """
+    This method calculates the Euclidean distance between two positions.
+
+    Parameters:
+    -----------
+    pos_a: np.ndarray
+        First position
+    pos_b: np.ndarray
+        Second position
+
+    Returns:
+    --------
+    dist: float
+        Distance between positions
+    """
+    dist = np.sqrt(np.sum((pos_a - pos_b)**2))
+    return dist
+
+def add_temporal_id(catalogue_list, linking_time, linking_dist, \
+                    get_timelife = True):#TODO test
+    """
+    This method generates the temporal ID of EpiFRIenDs clusters by linking
+    clusters from different time frames, assigning the same temporal ID to
+    them when they are close enough in time and space.
+
+    Parameters:
+    -----------
+    catalogue_list: list of pandas.DataFrame
+        List of EpiFRIenDs catalogues, each element of the list
+        corresponding to the catalogue of each timestep
+    linking_time: int
+        Maximum number of timesteps of distance to link hotspots with
+        the same temporal ID
+    linking_dist: float
+        Linking distance used to link the clusters from the different
+        time frames
+    get_timelife: bool
+        It specifies if the time periods and timelife of clusters are obtained
+
+    Returns:
+    --------
+    catalogue_list: list of pandas.DataFrame
+        List of EpiFRIenDs catalogues with the added variable 'tempID' (and
+        optionally the variables 'first_timestep', 'last_timestep' and
+        'lifetime')
+    """
+    #setting empty values of temp_id
+    for t in range(len(catalogue_list)):
+        catalogue_list[t]['tempID'] = pd.Series(dtype = int)
+    #Initialising tempID value to assign
+    next_temp_id = 0
+    #Loop over all timesteps
+    for t in range(len(catalogue_list)):
+        #Loop over all clusters in a timestep
+        for f in catalogue_list[t].T:
+            #Loop over all timesteps within linking_time
+            for t2 in range(t + 1, min(t + linking_time, len(catalogue_list))):
+                #Loop over all clusters in the linked timesteps
+                for f2 in catalogue_list[t2].T:
+                    #Calculating distance between clusters
+                    dist = distance(catalogue_list[t].loc[f]['mean_position_pos'], \
+                                    catalogue_list[t2].loc[f2]['mean_position_pos'])
+                    if dist <= linking_dist:
+                        temp_id1 = catalogue_list[t].loc[f]['tempID']
+                        temp_id2 = catalogue_list[t2].loc[f2]['tempID']
+                        #Assign tempIDs to linked clusters
+                        if np.isnan(temp_id1) and np.isnan(temp_id2):
+                            catalogue_list[t]['tempID'].loc[f] = next_temp_id
+                            catalogue_list[t2]['tempID'].loc[f2] = next_temp_id
+                            next_temp_id += 1
+                        elif np.isnan(temp_id1):
+                            catalogue_list[t]['tempID'].loc[f] = temp_id2
+                        elif np.isnan(temp_id2):
+                            catalogue_list[t2]['tempID'].loc[f2] = temp_id1
+                        elif temp_id1 != temp_id2:
+                            for t3 in range(len(catalogue_list)):
+                                catalogue_list[t3]['tempID'].loc[catalogue_list[t3]['tempID'] == temp_id2] = temp_id1
+    if get_timelife:
+        catalogue_list = get_lifetimes(catalogue_list)
+    return catalogue_list
+
+def get_lifetimes(catalogue_list):#TODO test
+    """
+    This method obtains the first and last time frames for each
+    temporal ID from a list of EpiFRIenDs catalogues and the corresponding
+    timelife.
+
+    Parameters:
+    -----------
+    catalogue_list: list of pandas.DataFrame
+        List of EpiFRIenDs catalogues, each element of the list
+        corresponding to the EpiFRIenDs catalogue of each timestep
+
+    Returns:
+    --------
+    catalogue_list: list of pandas.DataFrame
+        List of hotspot catalogues with the added fields 'first_timestep',
+        'last_timestep' and 'lifetime'
+    """
+    #getting list of temporal IDs appearing in catalogue_list
+    tempid_list = get_label_list(catalogue_list, label = 'tempID')
+    #Creating empty columns for first timestep, last timestep and lifteime
+    for t in range(len(catalogue_list)):
+            catalogue_list[t]['first_timestep'] = pd.Series(dtype = int)
+            catalogue_list[t]['last_timestep'] = pd.Series(dtype = int)
+            catalogue_list[t]['lifetime'] = 0
+    for tempid_num in tempid_list:
+        appearances = []
+        for i in range(len(catalogue_list)):
+            if tempid_num in catalogue_list[i]['tempID'].unique():
+                appearances.append(i)
+        min_appearance = min(appearances)
+        max_appearance = max(appearances)
+        lifetime = max_appearance - min_appearance
+        for i in range(min_appearance, max_appearance + 1):
+            catalogue_list[i]['first_timestep'].loc[catalogue_list[i]['tempID'] == tempid_num] = min_appearance
+            catalogue_list[i]['last_timestep'].loc[catalogue_list[i]['tempID'] == tempid_num] = max_appearance
+            catalogue_list[i]['lifetime'].loc[catalogue_list[i]['tempID'] == tempid_num] = lifetime
+    return catalogue_list
+
+def get_label_list(df_list, label = 'tempID'):
+    """
+    This method gives the unique values of a column in a list
+    of data frames.
+
+    Parameters:
+    -----------
+    df_list: list of pandas.DataFrames
+        List of dataframes
+    label: str
+        Name of column to select
+
+    Returns:
+    --------
+    label_list: list
+        List of unique values of the column over all dataframes from the list
+    """
+    for i in range(len(df_list)):
+        mask = df_list[i][label].notnull()
+        if i == 0:
+            label_list = df_list[i][label].loc[mask].unique()
+        else:
+            label_list = np.unique(np.concatenate((label_list, df_list[i][label].loc[mask].unique())))
+    return label_list
