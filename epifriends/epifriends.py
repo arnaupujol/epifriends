@@ -108,7 +108,10 @@ def dbscan(positions, link_d, min_neighbours = 2):
         cluster_id[cluster_id == f] = i+1
     return cluster_id
 
-def catalogue(positions, test_result, link_d, cluster_id = None, min_neighbours = 2):
+def catalogue(positions, test_result, link_d, cluster_id = None, \
+                min_neighbours = 2, max_p = 1, min_pos = 2, min_total = 0, \
+                min_pr = 0):#TODO add max_p, min_pos, min_total, min_pr
+    #TODO document max_p, min_pos, min_total, min_pr
     """
     This method runs the DBSCAN algorithm (if cluster_id is None) and obtains the mean
     positivity rate (PR) of each cluster extended with the non-infected cases
@@ -168,6 +171,8 @@ def catalogue(positions, test_result, link_d, cluster_id = None, min_neighbours 
                      'indeces' : [], #Indeces of all positions
                      'p' : [], #p-value of detection
                     }
+    #TODO next_id = 1
+    next_id = 1
     for i,f in enumerate(np.unique(cluster_id[cluster_id>0])):
         #get all indeces with this cluster id
         has_this_cluster_id = cluster_id == f
@@ -185,17 +190,22 @@ def catalogue(positions, test_result, link_d, cluster_id = None, min_neighbours 
                                     total_positives/total_n)
         pval_cluster[cluster_id_indeces] = pval
         #setting EpiFRIenDs catalogue
-        epifriends_catalogue['id'].append(f)
-        mean_pos = np.mean(positive_positions[cluster_id_indeces], axis = 0)
-        epifriends_catalogue['mean_position_pos'].append(mean_pos)
-        mean_pos_ext = np.mean(positions[total_friends_indeces], axis = 0)
-        epifriends_catalogue['mean_position_all'].append(mean_pos_ext)
-        epifriends_catalogue['mean_pr'].append(mean_pr)
-        epifriends_catalogue['positives'].append(len(cluster_id_indeces))
-        epifriends_catalogue['negatives'].append(len(total_friends_indeces) - len(cluster_id_indeces))
-        epifriends_catalogue['total'].append(len(total_friends_indeces))
-        epifriends_catalogue['indeces'].append(total_friends_indeces)
-        epifriends_catalogue['p'].append(pval)
+        #TODO if max_p, min_pos, min_total, min_pr
+        if pval < max_p and npos >= min_pos and \
+            len(total_friends_indeces) >= min_total and mean_pr >= min_pr:#TODO test
+            epifriends_catalogue['id'].append(next_id)#TODO append(next_id)
+            #TODO next_id+=1
+            next_id+=1
+            mean_pos = np.mean(positive_positions[cluster_id_indeces], axis = 0)
+            epifriends_catalogue['mean_position_pos'].append(mean_pos)
+            mean_pos_ext = np.mean(positions[total_friends_indeces], axis = 0)
+            epifriends_catalogue['mean_position_all'].append(mean_pos_ext)
+            epifriends_catalogue['mean_pr'].append(mean_pr)
+            epifriends_catalogue['positives'].append(len(cluster_id_indeces))
+            epifriends_catalogue['negatives'].append(len(total_friends_indeces) - len(cluster_id_indeces))
+            epifriends_catalogue['total'].append(len(total_friends_indeces))
+            epifriends_catalogue['indeces'].append(total_friends_indeces)
+            epifriends_catalogue['p'].append(pval)
     #Make the epifriends_catalogue a geopandas dataframe
     epifriends_catalogue = dict2geodf(epifriends_catalogue)
     return cluster_id, mean_pr_cluster, pval_cluster, epifriends_catalogue
@@ -245,7 +255,8 @@ def distance(pos_a, pos_b):
     return dist
 
 def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
-                       time_width, min_date, max_date, time_steps = 1):
+                       time_width, min_date, max_date, time_steps = 1):#TODO add max_p, min_pos, min_total, min_pr
+    #TODO document max_p, min_pos, min_total, min_pr
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
@@ -303,7 +314,7 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         #get catalogue
         cluster_id, mean_pr_cluster, pval_cluster, \
         epifriends_catalogue = catalogue(selected_positions, selected_test_results, link_d, \
-                                         min_neighbours = min_neighbours)
+                                         min_neighbours = min_neighbours)#TODO call max_p, min_pos, min_total, min_pr
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*(step_num + .5), unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]
