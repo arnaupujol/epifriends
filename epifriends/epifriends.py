@@ -244,6 +244,74 @@ def distance(pos_a, pos_b):
     dist = np.sqrt(np.sum((pos_a - pos_b)**2))
     return dist
 
+def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
+                       time_width, min_date, max_date, time_steps = 1):
+    """
+    This method generates a list of EpiFRIenDs catalogues representing different time frames
+    by including only cases within a time window that moves within each time step.
+
+    Parameters:
+    -----------
+    positions: np.ndarray
+        An array with the position parameters with shape (n,2),
+        where n is the number of positions
+    test_result: np.array
+        An array with the test results (0 or 1)
+    dates: pd.Series or np.array
+        List of the date times of the corresponding data
+    link_d: float
+        The linking distance to connect cases
+    min_neighbours: int
+        Minium number of neighbours in the radius < link_d needed to link cases
+        as friends
+    time_width: int
+        Number of days of the time window used to select cases in each time step
+    min_date: pd.DateTimeIndex
+        Initial date used in the first time step and time window selection
+    max_date: pd.DateTimeIndex
+        Final date to analyse, defining the last time window as the one fully overlapping
+        the data
+    time_steps: int
+        Number of days that the time window is shifted in each time step
+
+    Returns:
+    --------
+    temporal_catalogues: list of pandas.DataFrame
+        List of EpiFRIenDs catalogues, where each element contains the catalogue in each
+        time step
+    mean_date: list
+        List of dates corresponding to the median time in each time window
+    """
+    #Defining temporal range
+    dates = pd.to_datetime(dates)
+    if min_date is None:
+        min_date = dates.min()
+    if max_date is None:
+        max_date = dates.max()
+    #temporal loop until the last time frame that fully overlaps the data
+    temporal_catalogues = []
+    #Mean dates defines as the median time in each time window
+    mean_date = []
+    step_num = 0
+    while min_date + pd.to_timedelta(time_steps*step_num + time_width, unit = 'D') <= max_date:
+        #select data in time window
+        selected_data = (dates >= min_date + pd.to_timedelta(time_steps*step_num, unit = 'D'))& \
+                        (dates <= min_date + pd.to_timedelta(time_steps*step_num + time_width, unit = 'D'))
+        selected_positions = positions[selected_data]
+        selected_test_results = test_result[selected_data]
+
+        #get catalogue
+        cluster_id, mean_pr_cluster, pval_cluster, \
+        epifriends_catalogue = catalogue(selected_positions, selected_test_results, link_d, \
+                                         min_neighbours = min_neighbours)
+        #get median date
+        mean_date.append(min_date + pd.to_timedelta(time_steps*(step_num + .5), unit = 'D'))
+        epifriends_catalogue['Date'] = mean_date[-1]
+        temporal_catalogues.append(epifriends_catalogue)
+
+        step_num +=1
+    return temporal_catalogues, mean_date
+
 def add_temporal_id(catalogue_list, linking_time, linking_dist, \
                     get_timelife = True):#TODO test
     """

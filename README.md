@@ -57,4 +57,4 @@ Examples can be found in the directory `examples`, in the following Jupyter
 notebooks:
 
 - epifriends_on_different_distributions.ipynb: this notebook generates three
-sets of artificial data and shows how to run EpiFRIenDs to detect foci on them. 
+sets of artificial data and shows how to run EpiFRIenDs to detect foci on them.
