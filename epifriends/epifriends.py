@@ -109,9 +109,8 @@ def dbscan(positions, link_d, min_neighbours = 2):
     return cluster_id
 
 def catalogue(positions, test_result, link_d, cluster_id = None, \
-                min_neighbours = 2, max_p = 1, min_pos = 2, min_total = 0, \
-                min_pr = 0):#TODO add max_p, min_pos, min_total, min_pr
-    #TODO document max_p, min_pos, min_total, min_pr
+                min_neighbours = 2, max_p = 1, min_pos = 2, min_total = 2, \
+                min_pr = 0):
     """
     This method runs the DBSCAN algorithm (if cluster_id is None) and obtains the mean
     positivity rate (PR) of each cluster extended with the non-infected cases
@@ -131,6 +130,14 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
     min_neighbours: int
         Minium number of neighbours in the radius < link_d needed to link cases
         as friends
+    max_p: float
+        Maximum value of the p-value to consider the cluster detection
+    min_pos: int
+        Threshold of minimum number of positive cases in clusters applied
+    min_total: int
+        Threshold of minimum number of cases in clusters applied
+    min_pr: float
+        Threshold of minimum positivity rate in clusters applied
 
     Returns:
     --------
@@ -171,7 +178,6 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
                      'indeces' : [], #Indeces of all positions
                      'p' : [], #p-value of detection
                     }
-    #TODO next_id = 1
     next_id = 1
     for i,f in enumerate(np.unique(cluster_id[cluster_id>0])):
         #get all indeces with this cluster id
@@ -181,31 +187,35 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
         all_friends_indeces = find_indeces(positive_positions[cluster_id_indeces], link_d, tree)
         #get unique values of such indeces
         total_friends_indeces = np.unique(np.concatenate(all_friends_indeces))
-        #get mean infection from all the unique indeces
+        #get positivity rate from all the unique indeces
         mean_pr = np.mean(test_result[total_friends_indeces])
-        #assign mean PR and p-value to each cluster_id for the positive cases
-        mean_pr_cluster[cluster_id_indeces] = mean_pr
         npos = np.sum(test_result[total_friends_indeces])
-        pval = 1 - stats.binom.cdf(npos - 1, len(total_friends_indeces), \
+        ntotal = len(total_friends_indeces)
+        pval = 1 - stats.binom.cdf(npos - 1, ntotal, \
                                     total_positives/total_n)
-        pval_cluster[cluster_id_indeces] = pval
+
         #setting EpiFRIenDs catalogue
-        #TODO if max_p, min_pos, min_total, min_pr
-        if pval < max_p and npos >= min_pos and \
-            len(total_friends_indeces) >= min_total and mean_pr >= min_pr:#TODO test
-            epifriends_catalogue['id'].append(next_id)#TODO append(next_id)
-            #TODO next_id+=1
+        if pval < max_p and npos >= min_pos and ntotal >= min_total and \
+                mean_pr >= min_pr:
+            epifriends_catalogue['id'].append(next_id)
+            cluster_id[cluster_id_indeces] = next_id
             next_id+=1
+
+            mean_pr_cluster[cluster_id_indeces] = mean_pr
+            pval_cluster[cluster_id_indeces] = pval
+
             mean_pos = np.mean(positive_positions[cluster_id_indeces], axis = 0)
             epifriends_catalogue['mean_position_pos'].append(mean_pos)
             mean_pos_ext = np.mean(positions[total_friends_indeces], axis = 0)
             epifriends_catalogue['mean_position_all'].append(mean_pos_ext)
             epifriends_catalogue['mean_pr'].append(mean_pr)
-            epifriends_catalogue['positives'].append(len(cluster_id_indeces))
-            epifriends_catalogue['negatives'].append(len(total_friends_indeces) - len(cluster_id_indeces))
-            epifriends_catalogue['total'].append(len(total_friends_indeces))
+            epifriends_catalogue['positives'].append(int(npos))
+            epifriends_catalogue['negatives'].append(int(ntotal - npos))
+            epifriends_catalogue['total'].append(int(ntotal))
             epifriends_catalogue['indeces'].append(total_friends_indeces)
             epifriends_catalogue['p'].append(pval)
+        else:
+            cluster_id[cluster_id_indeces] = 0
     #Make the epifriends_catalogue a geopandas dataframe
     epifriends_catalogue = dict2geodf(epifriends_catalogue)
     return cluster_id, mean_pr_cluster, pval_cluster, epifriends_catalogue
@@ -255,8 +265,8 @@ def distance(pos_a, pos_b):
     return dist
 
 def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
-                       time_width, min_date, max_date, time_steps = 1):#TODO add max_p, min_pos, min_total, min_pr
-    #TODO document max_p, min_pos, min_total, min_pr
+                       time_width, min_date, max_date, time_steps = 1, \
+                       max_p = 1, min_pos = 2, min_total = 2, min_pr = 0):
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
@@ -284,6 +294,14 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         the data
     time_steps: int
         Number of days that the time window is shifted in each time step
+    max_p: float
+        Maximum value of the p-value to consider the cluster detection
+    min_pos: int
+        Threshold of minimum number of positive cases in clusters applied
+    min_total: int
+        Threshold of minimum number of cases in clusters applied
+    min_pr: float
+        Threshold of minimum positivity rate in clusters applied
 
     Returns:
     --------
@@ -313,8 +331,10 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
 
         #get catalogue
         cluster_id, mean_pr_cluster, pval_cluster, \
-        epifriends_catalogue = catalogue(selected_positions, selected_test_results, link_d, \
-                                         min_neighbours = min_neighbours)#TODO call max_p, min_pos, min_total, min_pr
+        epifriends_catalogue = catalogue(selected_positions, selected_test_results, \
+                                         link_d, min_neighbours = min_neighbours, \
+                                         max_p = max_p, min_pos = min_pos, \
+                                         min_total = min_total, min_pr = min_pr)
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*(step_num + .5), unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]
@@ -324,7 +344,7 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
     return temporal_catalogues, mean_date
 
 def add_temporal_id(catalogue_list, linking_time, linking_dist, \
-                    get_timelife = True):#TODO test
+                    get_timelife = True):
     """
     This method generates the temporal ID of EpiFRIenDs clusters by linking
     clusters from different time frames, assigning the same temporal ID to
@@ -386,7 +406,7 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
         catalogue_list = get_lifetimes(catalogue_list)
     return catalogue_list
 
-def get_lifetimes(catalogue_list):#TODO test
+def get_lifetimes(catalogue_list):
     """
     This method obtains the first and last time frames for each
     temporal ID from a list of EpiFRIenDs catalogues and the corresponding
