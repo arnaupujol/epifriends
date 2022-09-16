@@ -58,3 +58,8 @@ notebooks:
 
 - epifriends_on_different_distributions.ipynb: this notebook generates three
 sets of artificial data and shows how to run EpiFRIenDs to detect foci on them.
+
+- temporal_analysis.ipynb: this notebook generates mock data catalogues with a
+date time for each sample. Then, it shows how to run EpiFRIenDs in different
+time frames of the data set, how to link foci from different time frames to
+assign them the same temporal ID and how to estimate the lifetime of the foci. 
