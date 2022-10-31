@@ -15,11 +15,13 @@ making use of this software cite
 
 Software requirements:
 ----------------------
-All the packages that are required so that all the codes can run are:
+All the packages that are required are:
 - numpy
 - scipy
 - pandas
 - geopandas
+
+The Jupyter notebook examples also requires matplotlib. 
 
 Installation:
 ----------------------
