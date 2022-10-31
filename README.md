@@ -7,6 +7,12 @@
 This repository contains the EpiFRIenDs software to detect and analyse foci
 (clusters, outbreaks or hotspots) of infections from a given disease.
 
+This software is fully open source and all are welcome to use or modify it
+for any purpose. We would kindly request that any scientific publications
+making use of this software cite
+**Pujol A., Brokhattingen N., Matambisso G., et al (in prep.)**.
+
+
 Software requirements:
 ----------------------
 All the packages that are required so that all the codes can run are:
@@ -62,4 +68,4 @@ sets of artificial data and shows how to run EpiFRIenDs to detect foci on them.
 - temporal_analysis.ipynb: this notebook generates mock data catalogues with a
 date time for each sample. Then, it shows how to run EpiFRIenDs in different
 time frames of the data set, how to link foci from different time frames to
-assign them the same temporal ID and how to estimate the lifetime of the foci. 
+assign them the same temporal ID and how to estimate the lifetime of the foci.
