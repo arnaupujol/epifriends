@@ -1,4 +1,4 @@
 numpy
-scipy=1.7
+scipy>=1.7
 pandas
-geopandas=0.9
+geopandas>=0.9

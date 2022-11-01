@@ -381,7 +381,7 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
         #Loop over all clusters in a timestep
         for f in catalogue_list[t].T:
             #Loop over all timesteps within linking_time
-            for t2 in range(t + 1, min(t + linking_time, len(catalogue_list))):
+            for t2 in range(t + 1, min(t + linking_time + 1, len(catalogue_list))):
                 #Loop over all clusters in the linked timesteps
                 for f2 in catalogue_list[t2].T:
                     #Calculating distance between clusters
