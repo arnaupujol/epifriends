@@ -21,7 +21,7 @@ All the packages that are required are:
 - pandas
 - geopandas
 
-The Jupyter notebook examples also requires matplotlib. 
+The Jupyter notebook examples also require matplotlib. 
 
 Installation:
 ----------------------
