@@ -375,7 +375,7 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
     for t in range(len(catalogue_list)):
         catalogue_list[t]['tempID'] = pd.Series(dtype = int)
     #Initialising tempID value to assign
-    next_temp_id = 0
+    next_temp_id = 1
     #Loop over all timesteps
     for t in range(len(catalogue_list)):
         #Loop over all clusters in a timestep
@@ -402,6 +402,11 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
                         elif temp_id1 != temp_id2:
                             for t3 in range(len(catalogue_list)):
                                 catalogue_list[t3]['tempID'].loc[catalogue_list[t3]['tempID'] == temp_id2] = temp_id1
+    #Renaming tempID to that it goes from 1 to n
+    all_tempid = get_label_list(catalogue_list, 'tempID')
+    for i, tid in enumerate(np.sort(all_tempid)):
+        for j in range(len(catalogue_list)):
+            catalogue_list[j]['tempID'].loc[catalogue_list[j]['tempID'] == tid] = i+1
     if get_timelife:
         catalogue_list = get_lifetimes(catalogue_list)
     return catalogue_list
