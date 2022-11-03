@@ -265,8 +265,9 @@ def distance(pos_a, pos_b):
     return dist
 
 def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
-                       time_width, min_date, max_date, time_steps = 1, \
-                       max_p = 1, min_pos = 2, min_total = 2, min_pr = 0):
+                       time_width, min_date = None, max_date = None, \
+                       time_steps = 1, max_p = 1, min_pos = 2, min_total = 2, \
+                       min_pr = 0):
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
