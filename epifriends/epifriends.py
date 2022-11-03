@@ -336,7 +336,7 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
                                          max_p = max_p, min_pos = min_pos, \
                                          min_total = min_total, min_pr = min_pr)
         #get median date
-        mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))#TODO test
+        mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]
         temporal_catalogues.append(epifriends_catalogue)
 
