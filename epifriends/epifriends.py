@@ -158,9 +158,9 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
         cluster_id = dbscan(positive_positions, link_d, \
                             min_neighbours = min_neighbours)
     #Create KDTree for all populations
-    tree =spatial.KDTree(positions)
+    tree = spatial.KDTree(positions)
     #Define total number of positive cases
-    total_positives = np.sum(test_result)
+    total_positives = np.nansum(test_result)
     #Define total number of cases
     total_n = len(test_result)
 
@@ -188,14 +188,15 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
         #get unique values of such indeces
         total_friends_indeces = np.unique(np.concatenate(all_friends_indeces))
         #get positivity rate from all the unique indeces
-        mean_pr = np.mean(test_result[total_friends_indeces])
-        npos = np.sum(test_result[total_friends_indeces])
+        mean_pr = np.nanmean(test_result[total_friends_indeces])
+        npos = np.nansum(test_result[total_friends_indeces])
+        nneg = np.sum(test_result[total_friends_indeces] == 0)
         ntotal = len(total_friends_indeces)
         pval = 1 - stats.binom.cdf(npos - 1, ntotal, \
                                     total_positives/total_n)
 
         #setting EpiFRIenDs catalogue
-        if pval < max_p and npos >= min_pos and ntotal >= min_total and \
+        if pval <= max_p and npos >= min_pos and ntotal >= min_total and \
                 mean_pr >= min_pr:
             epifriends_catalogue['id'].append(next_id)
             cluster_id[cluster_id_indeces] = next_id
@@ -210,7 +211,7 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
             epifriends_catalogue['mean_position_all'].append(mean_pos_ext)
             epifriends_catalogue['mean_pr'].append(mean_pr)
             epifriends_catalogue['positives'].append(int(npos))
-            epifriends_catalogue['negatives'].append(int(ntotal - npos))
+            epifriends_catalogue['negatives'].append(int(nneg))
             epifriends_catalogue['total'].append(int(ntotal))
             epifriends_catalogue['indeces'].append(total_friends_indeces)
             epifriends_catalogue['p'].append(pval)
