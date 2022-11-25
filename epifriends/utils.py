@@ -19,13 +19,12 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True):
     test: np.array, list or pd.Series
         Vector of test results (if applied)
     keep_null_tests: bool, int or float
-        It defines how to treat the missing test results. If
-        True, they are kept as missing, that will included in
-        foci, contributing to the total size and the p-value,
-        but not to the number of positives, negatives and
-        positivity. If False, they are removed and not used. If
-        int or float, the value is assigned to them, being
-        interpreted as positive for 1 and negative for 0
+        It defines how to treat the missing test results. If True, they are kept
+        as missing, that will included foci, contributing to the total size and
+        the p-value but not to the number of positives, negatives and
+        positivity. If False, they are removed and not used. If int or float,
+        the value is assigned to them, being interpreted as positive for 1 and
+        negative for 0
 
     Returns:
     --------
@@ -47,15 +46,18 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True):
         x, y = np.array(x)[mask], np.array(y)[mask]
         return x, y
     else:
-        if type(keep_null_tests) in [float, int]:#TODO test will all MiPMon
-            test = np.copy(test)
+        if type(keep_null_tests) in [float, int]:
+            test = np.array(test, dtype = float)
             test[np.isnan(test)] = keep_null_tests
-        elif keep_null_tests is False:#TODO test will all MiPMon
+            print("assigning to missing test results the value", keep_null_tests)
+        elif keep_null_tests is False:
             mask = mask&np.isfinite(np.array(test, dtype = float))
-        elif keep_null_tests is True:#TODO test will all MiPMon
+            print("missing test results will be removed from the analysis")
+        elif keep_null_tests is True:
             pass
+            print("missing test results will be kept as unknown for the analysis")
         else:
-            raise Exception("Error: wrong assignment of keep_null_tests")#TODO test will all MiPMon
+            raise Exception("Error: wrong assignment of keep_null_tests")
         x, y = np.array(x)[mask], np.array(y)[mask]
         test = np.array(test, dtype = float)[mask]
         return x, y, test
@@ -109,13 +111,15 @@ def latlon2xy(lon, lat, to_epsg):
     #Assing new projected coordinates
     if to_epsg is None:
         #Set as optimal projection in Mozambique
+        print("reprojecting coordinates to EPSG: 32736")
         coord_df = coord_df.to_crs(epsg=32736)
     else:
+        print("reprojecting coordinates to EPSG:", to_epsg)
         coord_df = coord_df.to_crs(epsg=to_epsg)
     x, y = xy_from_geo(coord_df)
     return x, y
 
-def get_2dpositions(x, y, in_latlon = True, to_epsg = None):
+def get_2dpositions(x, y, in_latlon = False, to_epsg = None):
     """
     This method generate a 2d-vector of cartesian positions from
     the x, y data.

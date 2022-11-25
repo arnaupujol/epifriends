@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import geopandas
 from scipy import spatial, stats
+from epifriends import utils
 
 def find_indeces(positions, link_d, tree):
     """
@@ -44,21 +45,27 @@ def find_indeces(positions, link_d, tree):
         indeces[i] = np.array(indeces[i], dtype = int)
     return indeces
 
-def dbscan(positions, link_d, min_neighbours = 2):
+def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None):
     """
     This method finds the DBSCAN clusters from a set of positions and
     returns their cluster IDs.
 
     Parameters:
     -----------
-    positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
+    x: np.array
+        Vector of x geographical positions
+    y: np.array
+        Vector of y geographical positions
     link_d: float
         The linking distance of the DBSCAN algorithm
     min_neighbours: int
         Minium number of neighbours in the radius < link_d needed to link cases
         as friends
+    in_latlon: bool
+        If True, x and y coordinates are treated as longitude and latitude
+        respectively, otherwise they are treated as cartesian coordinates
+    to_epsg: int
+        If in_latlon is True, x and y are reprojected to this EPSG
 
     Returns:
     --------
@@ -66,6 +73,10 @@ def dbscan(positions, link_d, min_neighbours = 2):
         List of the cluster IDs of each position, with 0 for those
         without a cluster.
     """
+    #Removing elements with missing positions
+    x, y = utils.clean_unknown_data(x, y)
+    #Defining 2d-positions
+    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg)
     #Create cluster id
     cluster_id = np.zeros(len(positions))
 
@@ -108,9 +119,10 @@ def dbscan(positions, link_d, min_neighbours = 2):
         cluster_id[cluster_id == f] = i+1
     return cluster_id
 
-def catalogue(positions, test_result, link_d, cluster_id = None, \
+def catalogue(x, y, test_result, link_d, cluster_id = None, \
                 min_neighbours = 2, max_p = 1, min_pos = 2, min_total = 2, \
-                min_pr = 0):
+                min_pr = 0, in_latlon = False, to_epsg = None, \
+                keep_null_tests = True):
     """
     This method runs the DBSCAN algorithm (if cluster_id is None) and obtains the mean
     positivity rate (PR) of each cluster extended with the non-infected cases
@@ -118,9 +130,10 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
 
     Parameters:
     -----------
-    positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
+    x: np.array
+        Vector of x geographical positions
+    y: np.array
+        Vector of y geographical positions
     test_result: np.array
         An array with the test results (0 or 1)
     link_d: float
@@ -138,6 +151,18 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
         Threshold of minimum number of cases in clusters applied
     min_pr: float
         Threshold of minimum positivity rate in clusters applied
+    in_latlon: bool
+        If True, x and y coordinates are treated as longitude and latitude
+        respectively, otherwise they are treated as cartesian coordinates
+    to_epsg: int
+        If in_latlon is True, x and y are reprojected to this EPSG
+    keep_null_tests: bool, int or float
+        It defines how to treat the missing test results. If True, they are kept
+        as missing, that will included foci, contributing to the total size and
+        the p-value but not to the number of positives, negatives and
+        positivity. If False, they are removed and not used. If int or float,
+        the value is assigned to them, being interpreted as positive for 1 and
+        negative for 0
 
     Returns:
     --------
@@ -151,12 +176,19 @@ def catalogue(positions, test_result, link_d, cluster_id = None, \
     epifriends_catalogue: geopandas.DataFrame
         Catalogue of the epifriends clusters and their main characteristics
     """
+    #Removing elements with missing positions
+    x, y, test_result = utils.clean_unknown_data(x, y, test = test_result, \
+                                                 keep_null_tests = keep_null_tests)
+    #Defining 2d-positions
+    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg)
     #Define positions of positive cases
-    positive_positions = positions[test_result == 1]
+    are_positive = test_result == 1
+    positive_positions = positions[are_positive]
     #Computing cluster_id if needed
     if cluster_id is None:
-        cluster_id = dbscan(positive_positions, link_d, \
-                            min_neighbours = min_neighbours)
+        cluster_id = dbscan(positive_positions[:,0], positive_positions[:,1], \
+                            link_d, min_neighbours = min_neighbours, \
+                            in_latlon = False)
     #Create KDTree for all populations
     tree = spatial.KDTree(positions)
     #Define total number of positive cases
@@ -268,7 +300,8 @@ def distance(pos_a, pos_b):
 def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
                        time_width, min_date = None, max_date = None, \
                        time_steps = 1, max_p = 1, min_pos = 2, min_total = 2, \
-                       min_pr = 0):
+                       min_pr = 0):#TODO positions -> xy, add in_latlon, to_epsg, keep_null_tests
+    #TODO document xy, in_latlon, to_epsg, keep_null_tests
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
@@ -328,7 +361,7 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         #select data in time window
         selected_data = (dates >= min_date + pd.to_timedelta(time_steps*step_num, unit = 'D'))& \
                         (dates <= min_date + pd.to_timedelta(time_steps*step_num + time_width, unit = 'D'))
-        selected_positions = positions[selected_data]
+        selected_positions = positions[selected_data]#TODO positions ->x, y, #TODO selected_positions ->selected_x, selected_y
         selected_test_results = test_result[selected_data]
 
         #get catalogue
@@ -336,7 +369,7 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         epifriends_catalogue = catalogue(selected_positions, selected_test_results, \
                                          link_d, min_neighbours = min_neighbours, \
                                          max_p = max_p, min_pos = min_pos, \
-                                         min_total = min_total, min_pr = min_pr)
+                                         min_total = min_total, min_pr = min_pr)#TODO selected_positions -> selected_x, selected_y, add in_latlon, to_epsg, keep_null_tests
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]
