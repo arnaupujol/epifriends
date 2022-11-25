@@ -297,20 +297,21 @@ def distance(pos_a, pos_b):
     dist = np.sqrt(np.sum((pos_a - pos_b)**2))
     return dist
 
-def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
+def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
                        time_width, min_date = None, max_date = None, \
                        time_steps = 1, max_p = 1, min_pos = 2, min_total = 2, \
-                       min_pr = 0):#TODO positions -> xy, add in_latlon, to_epsg, keep_null_tests
-    #TODO document xy, in_latlon, to_epsg, keep_null_tests
+                       min_pr = 0, in_latlon = False, to_epsg = None, \
+                       keep_null_tests = True):
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
 
     Parameters:
     -----------
-    positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
+    x: np.array
+        Vector of x geographical positions
+    y: np.array
+        Vector of y geographical positions
     test_result: np.array
         An array with the test results (0 or 1)
     dates: pd.Series or np.array
@@ -337,6 +338,18 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         Threshold of minimum number of cases in clusters applied
     min_pr: float
         Threshold of minimum positivity rate in clusters applied
+    in_latlon: bool
+        If True, x and y coordinates are treated as longitude and latitude
+        respectively, otherwise they are treated as cartesian coordinates
+    to_epsg: int
+        If in_latlon is True, x and y are reprojected to this EPSG
+    keep_null_tests: bool, int or float
+        It defines how to treat the missing test results. If True, they are kept
+        as missing, that will included foci, contributing to the total size and
+        the p-value but not to the number of positives, negatives and
+        positivity. If False, they are removed and not used. If int or float,
+        the value is assigned to them, being interpreted as positive for 1 and
+        negative for 0
 
     Returns:
     --------
@@ -361,15 +374,18 @@ def temporal_catalogue(positions, test_result, dates, link_d, min_neighbours, \
         #select data in time window
         selected_data = (dates >= min_date + pd.to_timedelta(time_steps*step_num, unit = 'D'))& \
                         (dates <= min_date + pd.to_timedelta(time_steps*step_num + time_width, unit = 'D'))
-        selected_positions = positions[selected_data]#TODO positions ->x, y, #TODO selected_positions ->selected_x, selected_y
+        selected_x = x[selected_data]#TODO test this instead of selected_positions
+        selected_y = y[selected_data]#TODO test this instead of selected_positions
         selected_test_results = test_result[selected_data]
 
         #get catalogue
         cluster_id, mean_pr_cluster, pval_cluster, \
-        epifriends_catalogue = catalogue(selected_positions, selected_test_results, \
+        epifriends_catalogue = catalogue(selected_x, selected_y, selected_test_results, \
                                          link_d, min_neighbours = min_neighbours, \
                                          max_p = max_p, min_pos = min_pos, \
-                                         min_total = min_total, min_pr = min_pr)#TODO selected_positions -> selected_x, selected_y, add in_latlon, to_epsg, keep_null_tests
+                                         min_total = min_total, min_pr = min_pr, \
+                                         in_latlon = in_latlon, to_epsg = to_epsg, \
+                                         keep_null_tests = keep_null_tests)#TODO test all parameters
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]
