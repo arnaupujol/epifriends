@@ -45,7 +45,8 @@ def find_indeces(positions, link_d, tree):
         indeces[i] = np.array(indeces[i], dtype = int)
     return indeces
 
-def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None):
+def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None, \
+           verbose = True):
     """
     This method finds the DBSCAN clusters from a set of positions and
     returns their cluster IDs.
@@ -66,6 +67,8 @@ def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None):
         respectively, otherwise they are treated as cartesian coordinates
     to_epsg: int
         If in_latlon is True, x and y are reprojected to this EPSG
+    verbose: bool
+        It specifies if extra information is printed in the process
 
     Returns:
     --------
@@ -74,9 +77,10 @@ def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None):
         without a cluster.
     """
     #Removing elements with missing positions
-    x, y = utils.clean_unknown_data(x, y)
+    x, y = utils.clean_unknown_data(x, y, verbose = verbose)
     #Defining 2d-positions
-    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg)
+    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
+                                      verbose = verbose)
     #Create cluster id
     cluster_id = np.zeros(len(positions))
 
@@ -122,7 +126,7 @@ def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None):
 def catalogue(x, y, test_result, link_d, cluster_id = None, \
                 min_neighbours = 2, max_p = 1, min_pos = 2, min_total = 2, \
                 min_pr = 0, in_latlon = False, to_epsg = None, \
-                keep_null_tests = True):
+                keep_null_tests = True, verbose = True):
     """
     This method runs the DBSCAN algorithm (if cluster_id is None) and obtains
     the mean positivity rate (PR) of each cluster extended with the non-infected
@@ -163,6 +167,8 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
         negative for 0
+    verbose: bool
+        It specifies if extra information is printed in the process
 
     Returns:
     --------
@@ -178,9 +184,11 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
     """
     #Removing elements with missing positions
     x, y, test_result = utils.clean_unknown_data(x, y, test = test_result, \
-                                                 keep_null_tests = keep_null_tests)
+                                                 keep_null_tests = keep_null_tests, \
+                                                 verbose = verbose)
     #Defining 2d-positions
-    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg)
+    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
+                                      verbose = verbose)
     #Define positions of positive cases
     are_positive = test_result == 1
     positive_positions = positions[are_positive]
@@ -188,7 +196,7 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
     if cluster_id is None:
         cluster_id = dbscan(positive_positions[:,0], positive_positions[:,1], \
                             link_d, min_neighbours = min_neighbours, \
-                            in_latlon = False)
+                            in_latlon = False, verbose = False)
     #Create KDTree for all populations
     tree = spatial.KDTree(positions)
     #Define total number of positive cases
@@ -301,7 +309,7 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
                        time_width, min_date = None, max_date = None, \
                        time_steps = 1, max_p = 1, min_pos = 2, min_total = 2, \
                        min_pr = 0, in_latlon = False, to_epsg = None, \
-                       keep_null_tests = True):
+                       keep_null_tests = True, verbose = True):
     """
     This method generates a list of EpiFRIenDs catalogues representing different time frames
     by including only cases within a time window that moves within each time step.
@@ -350,6 +358,8 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
         negative for 0
+    verbose: bool
+        It specifies if extra information is printed in the process
 
     Returns:
     --------
@@ -374,8 +384,8 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
         #select data in time window
         selected_data = (dates >= min_date + pd.to_timedelta(time_steps*step_num, unit = 'D'))& \
                         (dates <= min_date + pd.to_timedelta(time_steps*step_num + time_width, unit = 'D'))
-        selected_x = x[selected_data]#TODO test this instead of selected_positions
-        selected_y = y[selected_data]#TODO test this instead of selected_positions
+        selected_x = x[selected_data]
+        selected_y = y[selected_data]
         selected_test_results = test_result[selected_data]
 
         #get catalogue
@@ -385,7 +395,9 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
                                          max_p = max_p, min_pos = min_pos, \
                                          min_total = min_total, min_pr = min_pr, \
                                          in_latlon = in_latlon, to_epsg = to_epsg, \
-                                         keep_null_tests = keep_null_tests)#TODO test all parameters
+                                         keep_null_tests = keep_null_tests, \
+                                         verbose = verbose)#TODO test in_latlon and to_epsg into MiPMon and Magude
+        verbose = False
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))
         epifriends_catalogue['Date'] = mean_date[-1]

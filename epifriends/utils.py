@@ -5,7 +5,8 @@ import pandas as pd
 import geopandas
 
 
-def clean_unknown_data(x, y, test = None, keep_null_tests = True):
+def clean_unknown_data(x, y, test = None, keep_null_tests = True, \
+                       verbose = True):
     """
     This method removes all the cases with any missing value
     in either x or y.
@@ -25,6 +26,8 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True):
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
         negative for 0
+    verbose: bool
+        It specifies if information on the process is printed
 
     Returns:
     --------
@@ -39,6 +42,8 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True):
         with all x and y available
 
     """
+    if verbose:
+        print("Data with unknown positions will be excluede from the analysis")
     #Defining mask to remove samples with no geolocations available
     mask = np.isfinite(np.array(x))&np.isfinite(np.array(y))
     if test is None:
@@ -49,13 +54,16 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True):
         if type(keep_null_tests) in [float, int]:
             test = np.array(test, dtype = float)
             test[np.isnan(test)] = keep_null_tests
-            print("assigning to missing test results the value", keep_null_tests)
+            if verbose:
+                print("assigning to missing test results the value", keep_null_tests)
         elif keep_null_tests is False:
             mask = mask&np.isfinite(np.array(test, dtype = float))
-            print("missing test results will be removed from the analysis")
+            if verbose:
+                print("missing test results will be removed from the analysis")
         elif keep_null_tests is True:
             pass
-            print("missing test results will be kept as unknown for the analysis")
+            if verbose:
+                print("missing test results will be kept as unknown for the analysis")
         else:
             raise Exception("Error: wrong assignment of keep_null_tests")
         x, y = np.array(x)[mask], np.array(y)[mask]
@@ -83,7 +91,7 @@ def xy_from_geo(coord_df):
     y = np.array(coord_df['geometry'].apply(lambda p:p.y))
     return x, y
 
-def latlon2xy(lon, lat, to_epsg):
+def latlon2xy(lon, lat, to_epsg, verbose = True):
     """
     This method transforms the latitude and longitud
     coordinates from to cartesian coordinates in meters.
@@ -96,6 +104,8 @@ def latlon2xy(lon, lat, to_epsg):
         Vector of latitude positions
     to_epsg: int
         EPSG number for the projection to use
+    verbose: bool
+        It specifies if information on the process is printed
 
     Returns:
     --------
@@ -111,15 +121,17 @@ def latlon2xy(lon, lat, to_epsg):
     #Assing new projected coordinates
     if to_epsg is None:
         #Set as optimal projection in Mozambique
-        print("reprojecting coordinates to EPSG: 32736")
+        if verbose:
+            print("reprojecting coordinates to EPSG: 32736")
         coord_df = coord_df.to_crs(epsg=32736)
     else:
-        print("reprojecting coordinates to EPSG:", to_epsg)
+        if verbose:
+            print("reprojecting coordinates to EPSG:", to_epsg)
         coord_df = coord_df.to_crs(epsg=to_epsg)
     x, y = xy_from_geo(coord_df)
     return x, y
 
-def get_2dpositions(x, y, in_latlon = False, to_epsg = None):
+def get_2dpositions(x, y, in_latlon = False, to_epsg = None, verbose = True):
     """
     This method generate a 2d-vector of cartesian positions from
     the x, y data.
@@ -136,6 +148,8 @@ def get_2dpositions(x, y, in_latlon = False, to_epsg = None):
         cartesian coordinates
     to_epsg: int
         If in_latlon is True, x and y are reprojected to this EPSG
+    verbose: bool
+        It specifies if information on the process is printed
 
     Return:
     -------
@@ -144,6 +158,6 @@ def get_2dpositions(x, y, in_latlon = False, to_epsg = None):
         where n is the number of positions
     """
     if in_latlon:
-        x, y = latlon2xy(x, y, to_epsg = to_epsg)
+        x, y = latlon2xy(x, y, to_epsg = to_epsg, verbose = verbose)
     positions = np.array((x, y)).T
     return positions
