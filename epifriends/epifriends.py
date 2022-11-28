@@ -124,9 +124,9 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
                 min_pr = 0, in_latlon = False, to_epsg = None, \
                 keep_null_tests = True):
     """
-    This method runs the DBSCAN algorithm (if cluster_id is None) and obtains the mean
-    positivity rate (PR) of each cluster extended with the non-infected cases
-    closer than the link_d.
+    This method runs the DBSCAN algorithm (if cluster_id is None) and obtains
+    the mean positivity rate (PR) of each cluster extended with the non-infected
+    cases closer than the link_d.
 
     Parameters:
     -----------
