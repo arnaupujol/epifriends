@@ -448,28 +448,28 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
                 #Loop over all clusters in the linked timesteps
                 for f2 in catalogue_list[t2].T:
                     #Calculating distance between clusters
-                    dist = distance(catalogue_list[t].loc[f]['mean_position_pos'], \
-                                    catalogue_list[t2].loc[f2]['mean_position_pos'])
+                    dist = distance(catalogue_list[t].loc[f, 'mean_position_pos'], \
+                                    catalogue_list[t2].loc[f2, 'mean_position_pos'])
                     if dist <= linking_dist:
-                        temp_id1 = catalogue_list[t].loc[f]['tempID']
-                        temp_id2 = catalogue_list[t2].loc[f2]['tempID']
+                        temp_id1 = catalogue_list[t].loc[f, 'tempID']
+                        temp_id2 = catalogue_list[t2].loc[f2, 'tempID']
                         #Assign tempIDs to linked clusters
                         if np.isnan(temp_id1) and np.isnan(temp_id2):
-                            catalogue_list[t]['tempID'].loc[f] = next_temp_id
-                            catalogue_list[t2]['tempID'].loc[f2] = next_temp_id
+                            catalogue_list[t].loc[f, 'tempID'] = next_temp_id
+                            catalogue_list[t2].loc[f2, 'tempID'] = next_temp_id
                             next_temp_id += 1
                         elif np.isnan(temp_id1):
-                            catalogue_list[t]['tempID'].loc[f] = temp_id2
+                            catalogue_list[t].loc[f, 'tempID'] = temp_id2
                         elif np.isnan(temp_id2):
-                            catalogue_list[t2]['tempID'].loc[f2] = temp_id1
+                            catalogue_list[t2].loc[f2, 'tempID'] = temp_id1
                         elif temp_id1 != temp_id2:
                             for t3 in range(len(catalogue_list)):
-                                catalogue_list[t3]['tempID'].loc[catalogue_list[t3]['tempID'] == temp_id2] = temp_id1
+                                catalogue_list[t3].loc[catalogue_list[t3]['tempID'] == temp_id2, 'tempID'] = temp_id1
     #Renaming tempID to that it goes from 1 to n
     all_tempid = get_label_list(catalogue_list, 'tempID')
     for i, tid in enumerate(np.sort(all_tempid)):
         for j in range(len(catalogue_list)):
-            catalogue_list[j]['tempID'].loc[catalogue_list[j]['tempID'] == tid] = i+1
+            catalogue_list[j].loc[catalogue_list[j]['tempID'] == tid, 'tempID'] = i+1
     if get_timelife:
         catalogue_list = get_lifetimes(catalogue_list)
     return catalogue_list
@@ -508,9 +508,9 @@ def get_lifetimes(catalogue_list):
         max_appearance = max(appearances)
         lifetime = max_appearance - min_appearance
         for i in range(min_appearance, max_appearance + 1):
-            catalogue_list[i]['first_timestep'].loc[catalogue_list[i]['tempID'] == tempid_num] = min_appearance
-            catalogue_list[i]['last_timestep'].loc[catalogue_list[i]['tempID'] == tempid_num] = max_appearance
-            catalogue_list[i]['lifetime'].loc[catalogue_list[i]['tempID'] == tempid_num] = lifetime
+            catalogue_list[i].loc[catalogue_list[i]['tempID'] == tempid_num, 'first_timestep'] = min_appearance
+            catalogue_list[i].loc[catalogue_list[i]['tempID'] == tempid_num, 'last_timestep'] = max_appearance
+            catalogue_list[i].loc[catalogue_list[i]['tempID'] == tempid_num, 'lifetime'] = lifetime
     return catalogue_list
 
 def get_label_list(df_list, label = 'tempID'):
@@ -533,7 +533,7 @@ def get_label_list(df_list, label = 'tempID'):
     for i in range(len(df_list)):
         mask = df_list[i][label].notnull()
         if i == 0:
-            label_list = df_list[i][label].loc[mask].unique()
+            label_list = df_list[i].loc[mask, label].unique()
         else:
-            label_list = np.unique(np.concatenate((label_list, df_list[i][label].loc[mask].unique())))
+            label_list = np.unique(np.concatenate((label_list, df_list[i].loc[mask, label].unique())))
     return label_list
