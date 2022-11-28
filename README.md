@@ -2,7 +2,7 @@
 
 > Author: **Arnau Pujol**  
 > Year: **2022**  
-> Version: **1.0**  
+> Version: **1.1**  
 
 This repository contains the EpiFRIenDs software to detect and analyse foci
 (clusters, outbreaks or hotspots) of infections from a given disease.
@@ -21,12 +21,12 @@ All the packages that are required are:
 - pandas
 - geopandas
 
-The Jupyter notebook examples also require matplotlib. 
+The Jupyter notebook examples also require matplotlib.
 
 Installation:
 ----------------------
 To install the repository, first you have to clone it to your local machine.
-Then you can simply run:
+Then, from its current directory, you can simply run:
 
 ```
 $ python setup.py install
@@ -44,9 +44,9 @@ Jupyter notebooks.
 
 How to use it:
 ----------------------------
-The file epifriends.py from the directory epifriends contains all the methods
-(functions) that can be called within EpiFRIenDs. The main methods of the
-algorithm are:
+The files epifriends.py and utils.py from the directory epifriends contains all
+the main methods(functions) that can be called within EpiFRIenDs. The main
+methods of the algorithm are defined in epifriends.py and are:
 - dbscan: from some input position, linking distance and minimum number of
 neighbours, this function finds DBSCAN clusters and assigns a cluster ID for
 each position, with 0 meaning that the position does not belong to any
