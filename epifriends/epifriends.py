@@ -396,7 +396,7 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
                                          min_total = min_total, min_pr = min_pr, \
                                          in_latlon = in_latlon, to_epsg = to_epsg, \
                                          keep_null_tests = keep_null_tests, \
-                                         verbose = verbose)#TODO test in_latlon and to_epsg into MiPMon and Magude
+                                         verbose = verbose)
         verbose = False
         #get median date
         mean_date.append(min_date + pd.to_timedelta(time_steps*step_num + .5*time_width, unit = 'D'))
