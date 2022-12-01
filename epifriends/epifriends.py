@@ -4,46 +4,8 @@ import numpy as np
 import pandas as pd
 import geopandas
 from scipy import spatial, stats
-from epifriends import utils
-
-def find_indeces(positions, link_d, tree):
-    """
-    This method returns the indeces of all the friends
-    of each position from positions given a KDTree.
-
-    Parameters:
-    -----------
-    positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
-    link_d: float
-        The linking distance to label friends
-    tree: scipy.spatial.KDTree
-        A KDTree build from the positions of the target data
-
-    Returns:
-    --------
-    indeces: list
-        List with an array of the indeces of the friends of each
-        position
-    """
-    indeces = []
-    for i in range(len(positions)):
-        indeces.append([])
-        dist = 0
-        kth = 0
-        while dist <= link_d:
-            kth += 1
-            dist, index = tree.query([positions[i]], k = [kth])
-            if dist == 0 and kth > 1:#avoiding issue for >1 point with dist == 0
-                d, index = tree.query([positions[i]], k = kth)
-                indeces[i] = index[0].tolist()
-            elif dist <= link_d:
-                indeces[i].append(index[0][0])
-            else:
-                break
-        indeces[i] = np.array(indeces[i], dtype = int)
-    return indeces
+from epifriends.utils import clean_unknown_data, get_2dpositions, find_indeces
+from epifriends.utils import dict2geodf, distance, get_label_list
 
 def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None, \
            verbose = True):
@@ -77,9 +39,9 @@ def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None, 
         without a cluster.
     """
     #Removing elements with missing positions
-    x, y = utils.clean_unknown_data(x, y, verbose = verbose)
+    x, y = clean_unknown_data(x, y, verbose = verbose)
     #Defining 2d-positions
-    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
+    positions = get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
                                       verbose = verbose)
     #Create cluster id
     cluster_id = np.zeros(len(positions))
@@ -183,11 +145,11 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
         Catalogue of the epifriends clusters and their main characteristics
     """
     #Removing elements with missing positions
-    x, y, test_result = utils.clean_unknown_data(x, y, test = test_result, \
+    x, y, test_result = clean_unknown_data(x, y, test = test_result, \
                                                  keep_null_tests = keep_null_tests, \
                                                  verbose = verbose)
     #Defining 2d-positions
-    positions = utils.get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
+    positions = get_2dpositions(x, y, in_latlon = in_latlon, to_epsg = to_epsg, \
                                       verbose = verbose)
     #Define positions of positive cases
     are_positive = test_result == 1
@@ -260,50 +222,6 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
     #Make the epifriends_catalogue a geopandas dataframe
     epifriends_catalogue = dict2geodf(epifriends_catalogue)
     return cluster_id, mean_pr_cluster, pval_cluster, epifriends_catalogue
-
-def dict2geodf(dict_catalogue, epsg = 3857):
-    """
-    This method transforms the EpiFRIenDs catalogue dictionary
-    into a geopandas dataframe.
-
-    Parameters:
-    -----------
-    dict_catalogue: dict
-        Dictionary with the EpiFRIenDs catalogue
-    epsg: int
-        GIS spatial projection of coordinates
-
-    Returns:
-    --------
-    geo_catalogue: geopandas.GeoDataFrame
-        Data frame of catalogue with GIS coordinates
-    """
-    geo_catalogue = pd.DataFrame(dict_catalogue)
-    x_points = np.array([i[0] for i in geo_catalogue['mean_position_pos']])
-    y_points = np.array([i[1] for i in geo_catalogue['mean_position_pos']])
-    geo_catalogue = geopandas.GeoDataFrame(geo_catalogue, \
-                        geometry = geopandas.points_from_xy(x_points, y_points))
-    geo_catalogue = geo_catalogue.set_crs(epsg=epsg)
-    return geo_catalogue
-
-def distance(pos_a, pos_b):
-    """
-    This method calculates the Euclidean distance between two positions.
-
-    Parameters:
-    -----------
-    pos_a: np.ndarray
-        First position
-    pos_b: np.ndarray
-        Second position
-
-    Returns:
-    --------
-    dist: float
-        Distance between positions
-    """
-    dist = np.sqrt(np.sum((pos_a - pos_b)**2))
-    return dist
 
 def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
                        time_width, min_date = None, max_date = None, \
@@ -512,28 +430,3 @@ def get_lifetimes(catalogue_list):
             catalogue_list[i].loc[catalogue_list[i]['tempID'] == tempid_num, 'last_timestep'] = max_appearance
             catalogue_list[i].loc[catalogue_list[i]['tempID'] == tempid_num, 'lifetime'] = lifetime
     return catalogue_list
-
-def get_label_list(df_list, label = 'tempID'):
-    """
-    This method gives the unique values of a column in a list
-    of data frames.
-
-    Parameters:
-    -----------
-    df_list: list of pandas.DataFrames
-        List of dataframes
-    label: str
-        Name of column to select
-
-    Returns:
-    --------
-    label_list: list
-        List of unique values of the column over all dataframes from the list
-    """
-    for i in range(len(df_list)):
-        mask = df_list[i][label].notnull()
-        if i == 0:
-            label_list = df_list[i].loc[mask, label].unique()
-        else:
-            label_list = np.unique(np.concatenate((label_list, df_list[i].loc[mask, label].unique())))
-    return label_list
