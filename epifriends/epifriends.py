@@ -223,8 +223,8 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
     epifriends_catalogue = dict2geodf(epifriends_catalogue)
     return cluster_id, mean_pr_cluster, pval_cluster, epifriends_catalogue
 
-def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours, \
-                       time_width, min_date = None, max_date = None, \
+def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours = 2, \
+                       time_width = 10, min_date = None, max_date = None, \
                        time_steps = 1, max_p = 1, min_pos = 2, min_total = 2, \
                        min_pr = 0, in_latlon = False, to_epsg = None, \
                        keep_null_tests = True, verbose = True):
