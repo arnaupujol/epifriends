@@ -12,18 +12,17 @@ def find_indeces(positions, link_d, tree):
     Parameters:
     -----------
     positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
+        An array with the position parameters with shape (n,2), where n is
+        the number of positions.
     link_d: float
-        The linking distance to label friends
+        The linking distance to label friends.
     tree: scipy.spatial.KDTree
-        A KDTree build from the positions of the target data
+        A KDTree build from the positions of the target data.
 
     Returns:
     --------
     indeces: list
-        List with an array of the indeces of the friends of each
-        position
+        List with an array of the indeces of the friends of each position.
     """
     indeces = []
     for i in range(len(positions)):
@@ -32,12 +31,12 @@ def find_indeces(positions, link_d, tree):
         kth = 0
         while dist <= link_d:
             kth += 1
-            dist, index = tree.query([positions[i]], k = [kth])
+            dist, index = tree.query(positions[i], k = [kth])
             if dist == 0 and kth > 1:#avoiding issue for >1 point with dist == 0
-                d, index = tree.query([positions[i]], k = kth)
-                indeces[i] = index[0].tolist()
+                d, index = tree.query(positions[i], k = kth)
+                indeces[i] = index.tolist()
             elif dist <= link_d:
-                indeces[i].append(index[0][0])
+                indeces[i].append(index[0])
             else:
                 break
         indeces[i] = np.array(indeces[i], dtype = int)
@@ -51,14 +50,14 @@ def dict2geodf(dict_catalogue, epsg = 3857):
     Parameters:
     -----------
     dict_catalogue: dict
-        Dictionary with the EpiFRIenDs catalogue
+        Dictionary with the EpiFRIenDs catalogue.
     epsg: int
-        GIS spatial projection of coordinates
+        GIS spatial projection of coordinates.
 
     Returns:
     --------
     geo_catalogue: geopandas.GeoDataFrame
-        Data frame of catalogue with GIS coordinates
+        Data frame of catalogue with GIS coordinates.
     """
     geo_catalogue = pd.DataFrame(dict_catalogue)
     x_points = np.array([i[0] for i in geo_catalogue['mean_position_pos']])
@@ -75,14 +74,14 @@ def distance(pos_a, pos_b):
     Parameters:
     -----------
     pos_a: np.ndarray
-        First position
+        First position.
     pos_b: np.ndarray
-        Second position
+        Second position.
 
     Returns:
     --------
     dist: float
-        Distance between positions
+        Distance between positions.
     """
     dist = np.sqrt(np.sum((pos_a - pos_b)**2))
     return dist
@@ -96,14 +95,14 @@ def get_label_list(df_list, label = 'tempID'):
     Parameters:
     -----------
     df_list: list of pandas.DataFrames
-        List of dataframes
+        List of dataframes.
     label: str
-        Name of column to select
+        Name of column to select.
 
     Returns:
     --------
     label_list: list
-        List of unique values of the column over all dataframes from the list
+        List of unique values of the column over all dataframes from the list.
     """
     for i in range(len(df_list)):
         mask = df_list[i][label].notnull()
@@ -123,32 +122,30 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True, \
     Parameters:
     -----------
     x: np.array, list or pd.Series
-        Vector of x positions
+        Vector of x positions.
     y: np.array, list or pd.Series
-        Vector of y positions
+        Vector of y positions.
     test: np.array, list or pd.Series
-        Vector of test results (if applied)
+        Vector of test results (if applied).
     keep_null_tests: bool, int or float
         It defines how to treat the missing test results. If True, they are kept
         as missing, that will included foci, contributing to the total size and
         the p-value but not to the number of positives, negatives and
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
-        negative for 0
+        negative for 0.
     verbose: bool
-        It specifies if information on the process is printed
+        It specifies if information on the process is printed.
 
     Returns:
     --------
     x: np.array, list or pd.Series
-        Vector of x positions of elements with all x and
-        y available
+        Vector of x positions of elements with all x and y available.
     y: np.array, list or pd.Series
-        Vector of y positions of elements with all x and
-        y available
+        Vector of y positions of elements with all x and y available.
     test: np.array, list or pd.Series
-        Vector of test results (if applied) of elements
-        with all x and y available
+        Vector of test results (if applied) of elements with all x and y
+        available.
 
     """
     if verbose:
@@ -187,14 +184,14 @@ def xy_from_geo(coord_df):
     Parameters:
     -----------
     coord_df: geopandas.GeoDataFrame
-        Geopandas dataframe with geometry variable
+        Geopandas dataframe with geometry variable.
 
     Returns:
     --------
     x: np.array
-        Vector of x geographical positions
+        Vector of x geographical positions.
     y: np.array
-        Vector of y geographical positions
+        Vector of y geographical positions.
     """
     x = np.array(coord_df['geometry'].apply(lambda p:p.x))
     y = np.array(coord_df['geometry'].apply(lambda p:p.y))
@@ -208,20 +205,20 @@ def latlon2xy(lon, lat, to_epsg, verbose = True):
     Parameters:
     -----------
     lon: np.array
-        Vector of longitude positions
+        Vector of longitude positions.
     lat: np.array
-        Vector of latitude positions
+        Vector of latitude positions.
     to_epsg: int
-        EPSG number for the projection to use
+        EPSG number for the projection to use.
     verbose: bool
-        It specifies if information on the process is printed
+        It specifies if information on the process is printed.
 
     Returns:
     --------
     x: np.array
-        Vector of x geographical positions in meters
+        Vector of x geographical positions in meters.
     y: np.array
-        Vector of y geographical positions in meters
+        Vector of y geographical positions in meters.
     """
     #create a geopandas dataframe with it's EPSG
     coord_df = geopandas.GeoDataFrame({'x' : lon, 'y' : lat}, \
@@ -248,23 +245,22 @@ def get_2dpositions(x, y, in_latlon = False, to_epsg = None, verbose = True):
     Parameters:
     -----------
     x: np.array
-        Vector of x geographical positions
+        Vector of x geographical positions.
     y: np.array
-        Vector of y geographical positions
+        Vector of y geographical positions.
     in_latlon: bool
-        If True, x and y coordinates are treated as longitude and
-        latitude respectively, otherwise they are treated as
-        cartesian coordinates
+        If True, x and y coordinates are treated as longitude and latitude
+        respectively, otherwise they are treated as cartesian coordinates.
     to_epsg: int
-        If in_latlon is True, x and y are reprojected to this EPSG
+        If in_latlon is True, x and y are reprojected to this EPSG.
     verbose: bool
-        It specifies if information on the process is printed
+        It specifies if information on the process is printed.
 
     Return:
     -------
     positions: np.ndarray
-        An array with the position parameters with shape (n,2),
-        where n is the number of positions
+        An array with the position parameters with shape (n,2), where n is the
+        number of positions.
     """
     if in_latlon:
         x, y = latlon2xy(x, y, to_epsg = to_epsg, verbose = verbose)

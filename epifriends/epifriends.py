@@ -16,21 +16,21 @@ def dbscan(x, y, link_d, min_neighbours = 2, in_latlon = False, to_epsg = None, 
     Parameters:
     -----------
     x: np.array
-        Vector of x geographical positions
+        Vector of x geographical positions.
     y: np.array
-        Vector of y geographical positions
+        Vector of y geographical positions.
     link_d: float
-        The linking distance of the DBSCAN algorithm
+        The linking distance of the DBSCAN algorithm.
     min_neighbours: int
         Minium number of neighbours in the radius < link_d needed to link cases
-        as friends
+        as friends.
     in_latlon: bool
         If True, x and y coordinates are treated as longitude and latitude
-        respectively, otherwise they are treated as cartesian coordinates
+        respectively, otherwise they are treated as cartesian coordinates.
     to_epsg: int
-        If in_latlon is True, x and y are reprojected to this EPSG
+        If in_latlon is True, x and y are reprojected to this EPSG.
     verbose: bool
-        It specifies if extra information is printed in the process
+        It specifies if extra information is printed in the process.
 
     Returns:
     --------
@@ -97,40 +97,40 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
     Parameters:
     -----------
     x: np.array
-        Vector of x geographical positions
+        Vector of x geographical positions.
     y: np.array
-        Vector of y geographical positions
+        Vector of y geographical positions.
     test_result: np.array
-        An array with the test results (0 or 1)
+        An array with the test results (0 or 1).
     link_d: float
-        The linking distance to connect cases
+        The linking distance to connect cases.
     cluster_id: np.array
-        An array with the cluster ids of the positive cases
+        An array with the cluster ids of the positive cases.
     min_neighbours: int
         Minium number of neighbours in the radius < link_d needed to link cases
-        as friends
+        as friends.
     max_p: float
-        Maximum value of the p-value to consider the cluster detection
+        Maximum value of the p-value to consider the cluster detection.
     min_pos: int
-        Threshold of minimum number of positive cases in clusters applied
+        Threshold of minimum number of positive cases in clusters applied.
     min_total: int
-        Threshold of minimum number of cases in clusters applied
+        Threshold of minimum number of cases in clusters applied.
     min_pr: float
-        Threshold of minimum positivity rate in clusters applied
+        Threshold of minimum positivity rate in clusters applied.
     in_latlon: bool
         If True, x and y coordinates are treated as longitude and latitude
-        respectively, otherwise they are treated as cartesian coordinates
+        respectively, otherwise they are treated as cartesian coordinates.
     to_epsg: int
-        If in_latlon is True, x and y are reprojected to this EPSG
+        If in_latlon is True, x and y are reprojected to this EPSG.
     keep_null_tests: bool, int or float
         It defines how to treat the missing test results. If True, they are kept
         as missing, that will included foci, contributing to the total size and
         the p-value but not to the number of positives, negatives and
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
-        negative for 0
+        negative for 0.
     verbose: bool
-        It specifies if extra information is printed in the process
+        It specifies if extra information is printed in the process.
 
     Returns:
     --------
@@ -138,11 +138,11 @@ def catalogue(x, y, test_result, link_d, cluster_id = None, \
         List of the cluster IDs of each position, with 0 for those
         without a cluster.
     mean_pr_fof: np.array
-        Mean PR corresponding to cluster_id
+        Mean PR corresponding to cluster_id.
     pval_fof: np.array
-        P-value corresponding to cluster_id
+        P-value corresponding to cluster_id.
     epifriends_catalogue: geopandas.DataFrame
-        Catalogue of the epifriends clusters and their main characteristics
+        Catalogue of the epifriends clusters and their main characteristics.
     """
     #Removing elements with missing positions
     x, y, test_result = clean_unknown_data(x, y, test = test_result, \
@@ -237,49 +237,49 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours = 2, \
     Parameters:
     -----------
     x: np.array
-        Vector of x geographical positions
+        Vector of x geographical positions.
     y: np.array
-        Vector of y geographical positions
+        Vector of y geographical positions.
     test_result: np.array
-        An array with the test results (0 or 1)
+        An array with the test results (0 or 1).
     dates: pd.Series or np.array
-        List of the date times of the corresponding data
+        List of the date times of the corresponding data.
     link_d: float
-        The linking distance to connect cases
+        The linking distance to connect cases.
     min_neighbours: int
         Minium number of neighbours in the radius < link_d needed to link cases
-        as friends
+        as friends.
     time_width: int
-        Number of days of the time window used to select cases in each time step
+        Number of days of the time window used to select cases in each time step.
     min_date: pd.DateTimeIndex
-        Initial date used in the first time step and time window selection
+        Initial date used in the first time step and time window selection.
     max_date: pd.DateTimeIndex
-        Final date to analyse, defining the last time window as the one fully overlapping
-        the data
+        Final date to analyse, defining the last time window as the one fully
+        overlapping the data.
     time_steps: int
-        Number of days that the time window is shifted in each time step
+        Number of days that the time window is shifted in each time step.
     max_p: float
-        Maximum value of the p-value to consider the cluster detection
+        Maximum value of the p-value to consider the cluster detection.
     min_pos: int
-        Threshold of minimum number of positive cases in clusters applied
+        Threshold of minimum number of positive cases in clusters applied.
     min_total: int
-        Threshold of minimum number of cases in clusters applied
+        Threshold of minimum number of cases in clusters applied.
     min_pr: float
-        Threshold of minimum positivity rate in clusters applied
+        Threshold of minimum positivity rate in clusters applied.
     in_latlon: bool
         If True, x and y coordinates are treated as longitude and latitude
-        respectively, otherwise they are treated as cartesian coordinates
+        respectively, otherwise they are treated as cartesian coordinates.
     to_epsg: int
-        If in_latlon is True, x and y are reprojected to this EPSG
+        If in_latlon is True, x and y are reprojected to this EPSG.
     keep_null_tests: bool, int or float
         It defines how to treat the missing test results. If True, they are kept
         as missing, that will included foci, contributing to the total size and
         the p-value but not to the number of positives, negatives and
         positivity. If False, they are removed and not used. If int or float,
         the value is assigned to them, being interpreted as positive for 1 and
-        negative for 0
+        negative for 0.
     verbose: bool
-        It specifies if extra information is printed in the process
+        It specifies if extra information is printed in the process.
     temporal_id: bool
         It specifies if the temporal ID of foci is generated by linking foci at
         different time steps.
@@ -295,10 +295,10 @@ def temporal_catalogue(x, y, test_result, dates, link_d, min_neighbours = 2, \
     Returns:
     --------
     temporal_catalogues: list of pandas.DataFrame
-        List of EpiFRIenDs catalogues, where each element contains the catalogue in each
-        time step
+        List of EpiFRIenDs catalogues, where each element contains the catalogue
+        in each time step.
     mean_date: list
-        List of dates corresponding to the median time in each time window
+        List of dates corresponding to the median time in each time window.
     """
     #Defining temporal range
     dates = pd.to_datetime(dates)
@@ -358,22 +358,22 @@ def add_temporal_id(catalogue_list, linking_time, linking_dist, \
     -----------
     catalogue_list: list of pandas.DataFrame
         List of EpiFRIenDs catalogues, each element of the list
-        corresponding to the catalogue of each timestep
+        corresponding to the catalogue of each timestep.
     linking_time: int
         Maximum number of timesteps of distance to link hotspots with
-        the same temporal ID
+        the same temporal ID.
     linking_dist: float
         Linking distance used to link the clusters from the different
-        time frames
+        time frames.
     get_timelife: bool
-        It specifies if the time periods and timelife of clusters are obtained
+        It specifies if the time periods and timelife of clusters are obtained.
 
     Returns:
     --------
     catalogue_list: list of pandas.DataFrame
         List of EpiFRIenDs catalogues with the added variable 'tempID' (and
         optionally the variables 'first_timestep', 'last_timestep' and
-        'lifetime')
+        'lifetime').
     """
     #setting empty values of temp_id
     for t in range(len(catalogue_list)):
@@ -425,13 +425,13 @@ def get_lifetimes(catalogue_list):
     -----------
     catalogue_list: list of pandas.DataFrame
         List of EpiFRIenDs catalogues, each element of the list
-        corresponding to the EpiFRIenDs catalogue of each timestep
+        corresponding to the EpiFRIenDs catalogue of each timestep.
 
     Returns:
     --------
     catalogue_list: list of pandas.DataFrame
         List of hotspot catalogues with the added fields 'first_timestep',
-        'last_timestep' and 'lifetime'
+        'last_timestep' and 'lifetime'.
     """
     #getting list of temporal IDs appearing in catalogue_list
     tempid_list = get_label_list(catalogue_list, label = 'tempID')
