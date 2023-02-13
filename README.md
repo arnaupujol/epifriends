@@ -11,7 +11,7 @@ This software is fully open source and all are welcome to use or modify it
 for any purpose. We would kindly request that any scientific publications
 making use of this software cite
 **Pujol A., Brokhattingen N., Matambisso G., et al (in prep.)**. You can find
-[here](https://github.com/arnaupujol/repifriends) a version of EpiFRIenDs in R 
+[here](https://github.com/arnaupujol/repifriends) a version of EpiFRIenDs in R. 
 
 
 Software requirements:
