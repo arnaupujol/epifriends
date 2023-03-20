@@ -149,7 +149,7 @@ def clean_unknown_data(x, y, test = None, keep_null_tests = True, \
 
     """
     if verbose:
-        print("Data with unknown positions will be excluede from the analysis")
+        print("Data with unknown positions will be excluded from the analysis")
     #Defining mask to remove samples with no geolocations available
     mask = np.isfinite(np.array(x))&np.isfinite(np.array(y))
     if test is None:
